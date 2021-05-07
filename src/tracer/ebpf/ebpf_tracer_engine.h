@@ -9,7 +9,6 @@
 #include <vector>
 #include <thread>
 #include <elf.h>
-
 #include "syscall_schema.h"
 #include "bpf_prog.h"
 #include "raw_ebpf_event.h"
@@ -55,12 +54,12 @@ private:
     // Instance level callback
     void PerfCallback(void *rawMessage, int rawMessageSize);
     // static callback that passes the instance pointer in cbCookie
-    static void PerfCallbackWrapper(void *cbCookie, void *rawMessage, int rawMessageSize);
+    static void PerfCallbackWrapper(void *cbCookie, int cpu, void *rawMessage, uint32_t rawMessageSize);
 
     // Instance level callback
     void PerfLostCallback(uint64_t lost);
     // static callback that passes the instance pointer in cbCookie
-    static void PerfLostCallbackWrapper(void *cbCookie, uint64_t lost);
+    static void PerfLostCallbackWrapper(void *cbCookie, int cpu, long long unsigned int lost);
 public:
     EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine, std::vector<Event> targetEvents);
 

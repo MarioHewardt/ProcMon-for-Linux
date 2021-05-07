@@ -41,13 +41,15 @@ void ebpf_telemetry_close_all();
 extern "C" int ebpf_telemetry_start(
 bool* configEvents,
 void (*event_cb)(void *ctx, int cpu, void *data, __u32 size),
-void (*events_lost_cb)(void *ctx, int cpu, __u64 lost_cnt)
+void (*events_lost_cb)(void *ctx, int cpu, __u64 lost_cnt),
+void* ctx
 ); 
 #else
 int ebpf_telemetry_start(
 bool* configEvents,
 void (*event_cb)(void *ctx, int cpu, void *data, __u32 size),
-void (*events_lost_cb)(void *ctx, int cpu, __u64 lost_cnt)
+void (*events_lost_cb)(void *ctx, int cpu, __u64 lost_cnt),
+void* ctx
 ); 
 #endif
 

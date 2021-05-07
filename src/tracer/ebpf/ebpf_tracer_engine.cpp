@@ -53,7 +53,9 @@ EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine
     RunState = TRACER_RUNNING;
     bool        configEvents[16];
 
-    ebpf_telemetry_start( configEvents, handle_event, handle_lost_events );
+    //ebpf_telemetry_start( configEvents, handle_event, handle_lost_events, (void*) this );
+    ConsumerThread = std::thread(&EbpfTracerEngine::Consume, this);
+    ebpf_telemetry_start( configEvents, &EbpfTracerEngine::PerfCallbackWrapper, &EbpfTracerEngine::PerfLostCallbackWrapper, (void*)this );
 
     // TODO: INIT THE BPF STUFF
     // Create all BPF maps early to be stored in external table storage.
@@ -130,7 +132,7 @@ EbpfTracerEngine::~EbpfTracerEngine()
     ConsumerThread.join();
 }
 
-void EbpfTracerEngine::PerfCallbackWrapper(/* EbpfTracerEngine* */void *cbCookie, void *rawMessage, int rawMessageSize)
+void EbpfTracerEngine::PerfCallbackWrapper(/* EbpfTracerEngine* */void *cbCookie, int cpu, void *rawMessage, uint32_t rawMessageSize)
 {
     static_cast<EbpfTracerEngine *>(cbCookie)->PerfCallback(rawMessage, rawMessageSize);
 }
@@ -140,7 +142,7 @@ void EbpfTracerEngine::PerfCallback(void *rawMessage, int rawMessageSize)
     EventQueue.push(*static_cast<SyscallEvent*>(rawMessage));
 }
 
-void EbpfTracerEngine::PerfLostCallbackWrapper(void *cbCookie, uint64_t lost)
+void EbpfTracerEngine::PerfLostCallbackWrapper(void *cbCookie, int cpu, long long unsigned int lost)
 {
     static_cast<EbpfTracerEngine*>(cbCookie)->PerfLostCallback(lost);
 }
@@ -172,6 +174,7 @@ void EbpfTracerEngine::Consume()
     // blocking pop return optional<T>, evaluates to "true" if we get a value
     // "false" if we've been cancelled
     // auto stacks = BPF->get_stack_table("stack_traces");
+
     std::vector<ITelemetry> batch;
     size_t batchSize = 50;
     batch.reserve(batchSize);
@@ -199,6 +202,8 @@ void EbpfTracerEngine::Consume()
 
             batch.clear();
         }
+
+        printf("Got an event\n");
 
         std::string syscall = SyscallSchema::Utils::SyscallNumberToName[event->sysnum];
         ITelemetry tel;

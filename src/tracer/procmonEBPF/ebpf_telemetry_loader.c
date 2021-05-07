@@ -244,7 +244,8 @@ bool populate_config_offsets(config_s *c)
 int ebpf_telemetry_start(
     bool *configEvents,
     void (*event_cb)(void *ctx, int cpu, void *data, __u32 size),
-    void (*events_lost_cb)(void *ctx, int cpu, __u64 lost_cnt)
+    void (*events_lost_cb)(void *ctx, int cpu, __u64 lost_cnt),
+    void* ctx
     )
 {
     unsigned int major = 0, minor = 0;
@@ -416,7 +417,7 @@ int ebpf_telemetry_start(
 
     pb_opts.sample_cb = event_cb;
     pb_opts.lost_cb = events_lost_cb;
-    pb_opts.ctx = NULL;
+    pb_opts.ctx = ctx;
     pb = perf_buffer__new(event_map_fd, MAP_PAGE_SIZE, &pb_opts); // param 2 is page_cnt == number of pages to mmap.
     ret = libbpf_get_error(pb);
     if (ret) {
