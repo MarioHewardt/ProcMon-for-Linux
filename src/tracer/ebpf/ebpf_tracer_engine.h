@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <BPF.h>
+//#include <BPF.h>
 #include <map>
 #include <memory>
 #include <vector>
@@ -38,14 +38,14 @@ private:
     CancellableMessageQueue<SyscallEvent> EventQueue;
 
     // The handle for the BPF program
-    std::unique_ptr<ebpf::BPF> BPF;
+    //std::unique_ptr<ebpf::BPF> BPF;
 
     std::vector<struct SyscallSchema::SyscallSchema> Schemas;
 
     std::map<int, void*> SymbolCacheMap;
 
     // use the same symbol settings as the defaults from bcc
-    static bcc_symbol_option SymbolOption;
+    //static bcc_symbol_option SymbolOption;
 
     void Poll();
     void Consume();

@@ -1734,7 +1734,7 @@ void Screen::windowPrintFill(WINDOW * win, int colorPair, int x, int y, const ch
     // print to screen
     va_list args;
     va_start(args, fmt);
-    vwprintw(win, fmt, args);
+    vw_printw(win, fmt, args);
     va_end(args);
 
     // get current cursor position

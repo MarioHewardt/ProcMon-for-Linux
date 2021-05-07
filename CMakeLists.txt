@@ -17,20 +17,6 @@ configure_file (
 
 include(FetchContent)
 
-# Fetch bcc. 
-# TODO: Consider maybe making this a CMake script to be called.
-FetchContent_Declare(
-  bcc
-  GIT_REPOSITORY https://github.com/iovisor/bcc.git
-  GIT_TAG        v0.19.0
-)
-
-FetchContent_GetProperties(bcc)
-if(NOT bcc_POPULATED)
-  FetchContent_Populate(bcc)
-  add_subdirectory(${bcc_SOURCE_DIR} ${bcc_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
-
 # Include Sqlite3 amalgamation.
 add_library(sqlite3-static STATIC
   "${CMAKE_SOURCE_DIR}/vendor/sqlite3/sqlite3.c"
@@ -53,12 +39,9 @@ set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -g -fno-omit-frame-pointer -DELPP_THRE
 set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Include required versioning, bcc, logging and sqlite3 header files. 
+# Include required versioning, logging and sqlite3 header files. 
 include_directories(
   "${PROJECT_BINARY_DIR}/src/"
-  "/usr/include/bcc/compat"
-  "${bcc_SOURCE_DIR}/src/cc/api" 
-  "${bcc_SOURCE_DIR}/src/cc"
   "${CMAKE_SOURCE_DIR}/vendor/sqlite3"
   ${CURSES_INCLUDE_DIR}
 )
@@ -87,9 +70,9 @@ target_link_libraries(
   configuration-static
   tracer-static
   storage-static
+  procmonEBPF  
   display-static 
   common-static
-  bcc-static
   ${CURSES_LIBRARIES}
   -lpanel
   logging-static

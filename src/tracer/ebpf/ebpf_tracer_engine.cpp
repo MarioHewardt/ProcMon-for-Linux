@@ -5,23 +5,59 @@
 #include "../../logging/easylogging++.h"
 #include <iostream>
 
+#include "../linuxHelpers.h"
+#include "../procmonEBPF/ebpf_telemetry_loader.h"
+#include "../procmon_defs.h"
+
 #define STAT_MAX_ITEMS      10
 #define CONFIG_ITEMS        1
 
+int i=0;
 
-bcc_symbol_option EbpfTracerEngine::SymbolOption = {.use_debug_file = 1,
+static void handle_event(void *ctx, int cpu, void *data, __u32 size)
+{
+    /*if (size < 16) {
+        printf("BAD EVENT: size=%d\n", size);
+        bad_events++;
+        return;
+    }*/
+
+    //FILE *f = fopen("hits.txt", "w");
+    //fprintf(f, "Got a hit\n");
+    //fclose(f);
+
+    //PSYSMON_EVENT_HEADER eventHdr = (PSYSMON_EVENT_HEADER)data;
+    //total_events++;
+    printf("Got an event: %d\n", i);
+    i++;
+
+    //DispatchEvent(eventHdr);
+}
+
+void handle_lost_events(void *ctx, int cpu, __u64 lost_cnt)
+{
+    fprintf(stdout, "Lost %llu events on CPU #%d!\n", lost_cnt, cpu);
+    //num_lost_notifications++;
+    //num_lost_events += lost_cnt;
+}
+
+
+/*bcc_symbol_option EbpfTracerEngine::SymbolOption = {.use_debug_file = 1,
                                                     .check_debug_file_crc = 1,
 						    .lazy_symbolize = 1,
-                                                    .use_symbol_type = (1 << STT_FUNC) | (1 << STT_GNU_IFUNC)};
+                                                    .use_symbol_type = (1 << STT_FUNC) | (1 << STT_GNU_IFUNC)};*/
 
 EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine, std::vector<Event> targetEvents)
     : ITracerEngine(storageEngine, targetEvents), Schemas(SyscallSchema::Utils::CollectSyscallSchema())
 {
     RunState = TRACER_RUNNING;
+    bool        configEvents[16];
+
+    ebpf_telemetry_start( configEvents, handle_event, handle_lost_events );
 
     // TODO: INIT THE BPF STUFF
     // Create all BPF maps early to be stored in external table storage.
-    auto config_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "config", sizeof(int), sizeof(uint64_t), CONFIG_ITEMS, 0);
+/*    auto config_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "config", sizeof(int), sizeof(uint64_t), CONFIG_ITEMS, 0);
     auto pid_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "pids", sizeof(int), sizeof(uint64_t), MAX_PIDS, 0);
     auto runstate_fd = bcc_create_map(BPF_MAP_TYPE_ARRAY, "runstate", sizeof(int), sizeof(uint64_t), 1, 0);
     auto syscalls_fd = bcc_create_map(BPF_MAP_TYPE_HASH, "syscalls", sizeof(int), sizeof(SyscallSchema::SyscallSchema), 345, 0);
@@ -76,12 +112,15 @@ EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine
 
     BPF->attach_tracepoint("raw_syscalls:sys_enter", sys_enter_bpf_prog_name);
     BPF->attach_tracepoint("raw_syscalls:sys_exit", sys_exit_bpf_prog_name);
+    */
+
+
 }
 
 void EbpfTracerEngine::SetRunState(int runState)
 {
     RunState = runState; 
-    BPF->get_array_table<uint64_t>("runstate").update_value(0, runState);
+    //BPF->get_array_table<uint64_t>("runstate").update_value(0, runState);
 }
 
 EbpfTracerEngine::~EbpfTracerEngine()
@@ -113,7 +152,7 @@ void EbpfTracerEngine::PerfLostCallback(uint64_t lost)
 
 void EbpfTracerEngine::Poll()
 {
-    while (!EventQueue.isCancelled())
+/*    while (!EventQueue.isCancelled())
     {
         if (BPF->poll_perf_buffer("events", 500) == -1)
         {
@@ -124,6 +163,7 @@ void EbpfTracerEngine::Poll()
     }
 
     // Any cleanup?
+    */
     return;
 }
 
@@ -193,11 +233,12 @@ StackTrace EbpfTracerEngine::GetStackTraceForIPs(int pid, uint64_t *kernelIPs, u
     if (pid < 0)
         pid = -1;
 
+/*
     if (SymbolCacheMap.find(-1) == SymbolCacheMap.end())
-        SymbolCacheMap[-1] = bcc_symcache_new(pid, &SymbolOption);
+        //SymbolCacheMap[-1] = bcc_symcache_new(pid, &SymbolOption);
     void *kcache = SymbolCacheMap[-1];
     if (SymbolCacheMap.find(pid) == SymbolCacheMap.end())
-        SymbolCacheMap[pid] = bcc_symcache_new(pid, &SymbolOption);
+        //SymbolCacheMap[pid] = bcc_symcache_new(pid, &SymbolOption);
     void *cache = SymbolCacheMap[pid];
 
 
@@ -241,7 +282,7 @@ StackTrace EbpfTracerEngine::GetStackTraceForIPs(int pid, uint64_t *kernelIPs, u
             result.userSymbols.push_back(ss.str());
         }
     }
-
+*/
     return result;
 }
 
@@ -249,7 +290,7 @@ void EbpfTracerEngine::AddPids(std::vector<int> pidsToTrace)
 {
     for(int i=0; i<pidsToTrace.size(); i++)
     {
-        BPF->get_array_table<uint64_t>("pids").update_value(i, pidsToTrace[i]);
+        //BPF->get_array_table<uint64_t>("pids").update_value(i, pidsToTrace[i]);
     }
 }
 

@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <version.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 #include "configuration/procmon_configuration.h"
 #include "display/screen.h"
