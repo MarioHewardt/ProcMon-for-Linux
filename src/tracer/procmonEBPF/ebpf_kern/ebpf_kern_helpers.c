@@ -479,10 +479,10 @@ static inline char* set_event_arg_info(
 
 // check and send
 __attribute__((always_inline))
-static inline void check_and_send_event(void *ctx, void* eventHdr, config_s *config)
+static inline void check_and_send_event(void *ctx, void* event, config_s *config)
 {
-    size_t size = 16;
-    bpf_perf_event_output(ctx, &event_map, BPF_F_CURRENT_CPU, eventHdr, size < LINUX_MAX_EVENT_SIZE ? size : 0);
+    //size_t size = 16;
+    bpf_perf_event_output(ctx, &event_map, BPF_F_CURRENT_CPU, event, sizeof(struct SyscallEvent));
 }
  
 #endif

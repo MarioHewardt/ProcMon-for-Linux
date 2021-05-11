@@ -34,12 +34,14 @@
 #include <sys/utsname.h>
 #include <types.h>
 #include <signal.h>
+#include <pthread.h>
 
 void ebpf_telemetry_close_all();
 
 #ifdef __cplusplus
 extern "C" int ebpf_telemetry_start(
 bool* configEvents,
+bool runInBackground,
 void (*event_cb)(void *ctx, int cpu, void *data, __u32 size),
 void (*events_lost_cb)(void *ctx, int cpu, __u64 lost_cnt),
 void* ctx
@@ -47,6 +49,7 @@ void* ctx
 #else
 int ebpf_telemetry_start(
 bool* configEvents,
+bool runInBackground,
 void (*event_cb)(void *ctx, int cpu, void *data, __u32 size),
 void (*events_lost_cb)(void *ctx, int cpu, __u64 lost_cnt),
 void* ctx

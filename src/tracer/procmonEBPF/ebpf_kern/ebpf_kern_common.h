@@ -80,6 +80,22 @@ struct bpf_our_raw_tracepoint_args {
 #define BPF_F_CURRENT_CPU 0xffffffffULL
 #endif
 
+struct SyscallEvent {
+    pid_t pid;
+    __u32 sysnum;
+    __u64 timestamp;
+    __u64 duration_ns;
+    __u64 userStack[32];
+    __u64 userStackCount;
+    __u64 kernelStack[32];
+    __u64 kernelStackCount;
+    // u64 userStackKey;
+    // u64 kernelStackKey;
+    __u64 ret;
+    char comm[16];
+    unsigned char buffer [128]; 
+};
+
 // creat a map to transport events to userland via perf ring buffer
 struct bpf_map_def SEC("maps") event_map = {
 	.type = BPF_MAP_TYPE_PERF_EVENT_ARRAY, //BPF_MAP_TYPE_HASH doesnt stack....

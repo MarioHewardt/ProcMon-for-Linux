@@ -24,7 +24,7 @@ struct ITelemetry
     friend bool operator != (ITelemetry a, ITelemetry b)
     {
         if(a.pid != b.pid) return true;
-        if(a.stackTrace.Serialize() != b.stackTrace.Serialize()) return true;
+        //if(a.stackTrace.Serialize() != b.stackTrace.Serialize()) return true;
         if(a.comm != b.comm) return true;
         if(a.syscall != b.syscall) return true;
         if(a.result != b.result) return true;

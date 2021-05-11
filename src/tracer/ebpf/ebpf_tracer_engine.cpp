@@ -28,7 +28,7 @@ static void handle_event(void *ctx, int cpu, void *data, __u32 size)
 
     //PSYSMON_EVENT_HEADER eventHdr = (PSYSMON_EVENT_HEADER)data;
     //total_events++;
-    printf("Got an event: %d\n", i);
+    //printf("Got an event: %d\n", i);
     i++;
 
     //DispatchEvent(eventHdr);
@@ -55,7 +55,7 @@ EbpfTracerEngine::EbpfTracerEngine(std::shared_ptr<IStorageEngine> storageEngine
 
     //ebpf_telemetry_start( configEvents, handle_event, handle_lost_events, (void*) this );
     ConsumerThread = std::thread(&EbpfTracerEngine::Consume, this);
-    ebpf_telemetry_start( configEvents, &EbpfTracerEngine::PerfCallbackWrapper, &EbpfTracerEngine::PerfLostCallbackWrapper, (void*)this );
+    ebpf_telemetry_start( configEvents, true, &EbpfTracerEngine::PerfCallbackWrapper, &EbpfTracerEngine::PerfLostCallbackWrapper, (void*)this );
 
     // TODO: INIT THE BPF STUFF
     // Create all BPF maps early to be stored in external table storage.
@@ -139,6 +139,7 @@ void EbpfTracerEngine::PerfCallbackWrapper(/* EbpfTracerEngine* */void *cbCookie
 
 void EbpfTracerEngine::PerfCallback(void *rawMessage, int rawMessageSize)
 {
+    //fprintf(stderr, "Callback");
     EventQueue.push(*static_cast<SyscallEvent*>(rawMessage));
 }
 
@@ -193,17 +194,15 @@ void EbpfTracerEngine::Consume()
         if (batch.size() >= batchSize)
         {
             auto res = _storageEngine->StoreMany(batch);
-            // Free memory used for the arguments
+            /* Free memory used for the arguments
             for (ITelemetry& datam: batch)
             {
                 free(datam.arguments);
                 datam.arguments = NULL;
-            }
+            }*/
 
             batch.clear();
         }
-
-        printf("Got an event\n");
 
         std::string syscall = SyscallSchema::Utils::SyscallNumberToName[event->sysnum];
         ITelemetry tel;

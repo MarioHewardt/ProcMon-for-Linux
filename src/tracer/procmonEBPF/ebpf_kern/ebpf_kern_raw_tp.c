@@ -88,7 +88,7 @@ int sys_exit(struct bpf_our_raw_tracepoint_args *ctx)
 {
     uint64_t pid_tid = bpf_get_current_pid_tgid();
     uint32_t cpu_id = bpf_get_smp_processor_id();
-    void* eventHdr = NULL;
+    struct SyscallEvent* event = NULL;
     args_s *event_args = NULL;
     struct pt_regs *regs = (struct pt_regs *)ctx->args[0];
     uint32_t config_id = 0;
@@ -121,8 +121,8 @@ int sys_exit(struct bpf_our_raw_tracepoint_args *ctx)
     }
 
     // retrieve map storage for event
-    eventHdr = bpf_map_lookup_elem(&event_storage_map, &cpu_id);
-    if (!eventHdr)
+    event = bpf_map_lookup_elem(&event_storage_map, &cpu_id);
+    if (!event)
         return 0;
 
     /*ptr = set_event_arg_info(eventHdr, config, pid_tid, cpu_id, event_args);
@@ -134,11 +134,18 @@ int sys_exit(struct bpf_our_raw_tracepoint_args *ctx)
         return 0;
     }*/
 
-    check_and_send_event((void *)ctx, eventHdr, config);
+    event->pid = pid_tid >> 32;
+    event->sysnum = ctx->args[1];
+    event->timestamp = 1;
+    event->duration_ns = 2;
+    event->ret = event_args->return_code;
+    strcpy(event->comm, "comm");
+    strcpy(event->buffer, "buffer");
+
+    check_and_send_event((void *)ctx, event, config);
 
     // Cleanup
     bpf_map_delete_elem(&args_hash, &pid_tid);
 
     return 0;
 }
-

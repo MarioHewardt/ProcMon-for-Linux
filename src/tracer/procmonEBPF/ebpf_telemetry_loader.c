@@ -241,8 +241,26 @@ bool populate_config_offsets(config_s *c)
     return true;
 }*/
 
+void* perf_buffer_poll(void* ctx)
+{
+    struct perf_buffer* pb = (struct perf_buffer*)ctx;
+    if(pb)
+    {
+        int i = 0;
+        while ((perf_buffer__poll(pb, 1000)) >= 0 ) {
+            if (isTesting){
+                if (i++ > STOPLOOP) break;
+            }
+        }
+    }
+
+    ebpf_telemetry_close_all();
+    return NULL;
+}
+
 int ebpf_telemetry_start(
     bool *configEvents,
+    bool runInBackground,    
     void (*event_cb)(void *ctx, int cpu, void *data, __u32 size),
     void (*events_lost_cb)(void *ctx, int cpu, __u64 lost_cnt),
     void* ctx
@@ -263,7 +281,7 @@ int ebpf_telemetry_start(
     }
 
     if (sscanf(uname_s.release, "%u.%u", &major, &minor) == 2){
-        fprintf(stderr, "Found Kernel version: %u.%u\n", major, minor);
+        //fprintf(stderr, "Found Kernel version: %u.%u\n", major, minor);
     }
     else{
         fprintf(stderr, "Couldn't find version\n");
@@ -282,25 +300,25 @@ int ebpf_telemetry_start(
     } else if (major == 4 && minor <= 16) {
         snprintf(filename, sizeof(filename), "%s", KERN_4_15_4_16_OBJ);
         raw_tracepoints = false;
-        fprintf(stderr, "Using Tracepoints, sub 4096 instructions, no loops\n");
+        //fprintf(stderr, "Using Tracepoints, sub 4096 instructions, no loops\n");
     } else if ((major == 4) || (major == 5 && minor <= 1)) {
         snprintf(filename, sizeof(filename), "%s", KERN_4_17_5_1_OBJ);
         raw_tracepoints = true;
-        fprintf(stderr, "Using Raw Tracepoints, sub 4096 instructions, no loops\n");
+        //fprintf(stderr, "Using Raw Tracepoints, sub 4096 instructions, no loops\n");
     } else if (major == 5 && minor == 2) {
         snprintf(filename, sizeof(filename), "%s", KERN_5_2_OBJ);
         raw_tracepoints = true;
-        fprintf(stderr, "Using Raw Tracepoints, sub 1M instructions, no loops\n");
+        //fprintf(stderr, "Using Raw Tracepoints, sub 1M instructions, no loops\n");
     } else {
         snprintf(filename, sizeof(filename), "%s", KERN_5_3__OBJ);
         raw_tracepoints = true;
-        fprintf(stderr, "Using Raw Tracepoints, sub 1M instructions, with loops\n");
+        //fprintf(stderr, "Using Raw Tracepoints, sub 1M instructions, with loops\n");
     }
 
     // discover path
     snprintf(filepath, PATH_MAX, "%s", filename);
 
-    fprintf(stderr, "Using filepath %s\n", filepath);
+    //fprintf(stderr, "Using filepath %s\n", filepath);
 
     if (stat(filepath, &filepath_stat) != 0 || !S_ISREG(filepath_stat.st_mode)) {
         snprintf(filepath, PATH_MAX, "%s/%s", SYSMON_EBPF_DIR, filename);
@@ -316,7 +334,7 @@ int ebpf_telemetry_start(
         }
     }
 
-    fprintf(stderr, "Using EBPF object: %s\n", filepath);
+    //fprintf(stderr, "Using EBPF object: %s\n", filepath);
 
     setrlimit(RLIMIT_MEMLOCK, &lim);
 
@@ -377,6 +395,7 @@ int ebpf_telemetry_start(
     config.bootNsSinceEpoch = g_bootSecSinceEpoch * (1000 * 1000 * 1000);
 
 //    populate_active_events(&config, configEvents);
+    memset(config.active, 0, sizeof(config.active));
     config.active[__NR_execve] = true;
     config.active[__NR_execveat] = true;
 
@@ -411,14 +430,14 @@ int ebpf_telemetry_start(
     }
 
     // from Kernel 5.7.1 ex: trace_output_user.c 
-    struct perf_buffer_opts pb_opts = {0};
+    struct perf_buffer_opts* pb_opts = malloc(sizeof(struct perf_buffer_opts));
     struct perf_buffer *pb;
     int ret;
 
-    pb_opts.sample_cb = event_cb;
-    pb_opts.lost_cb = events_lost_cb;
-    pb_opts.ctx = ctx;
-    pb = perf_buffer__new(event_map_fd, MAP_PAGE_SIZE, &pb_opts); // param 2 is page_cnt == number of pages to mmap.
+    pb_opts->sample_cb = event_cb;
+    pb_opts->lost_cb = events_lost_cb;
+    pb_opts->ctx = ctx;
+    pb = perf_buffer__new(event_map_fd, MAP_PAGE_SIZE, pb_opts); // param 2 is page_cnt == number of pages to mmap.
     ret = libbpf_get_error(pb);
     if (ret) {
         fprintf(stderr, "ERROR: failed to setup perf_buffer: %d\n", ret);
@@ -426,15 +445,23 @@ int ebpf_telemetry_start(
     }
 
     fprintf(stderr, "Running...\n");
-
-    int i = 0;
-    while ((ret = perf_buffer__poll(pb, 1000)) >= 0 ) {
-        if (isTesting){
-            if (i++ > STOPLOOP) break;
-        }
+    if(runInBackground)
+    {
+        pthread_t thread;
+        pthread_create(&thread, NULL, perf_buffer_poll, pb);
+        fprintf(stderr, "Created poll thread...\n");
     }
+    else
+    {
+        int i = 0;
+        while ((ret = perf_buffer__poll(pb, 1000)) >= 0 ) {
+            if (isTesting){
+                if (i++ > STOPLOOP) break;
+            }
+        }
 
-    ebpf_telemetry_close_all();
+        ebpf_telemetry_close_all();
+    }
 
     return 0;
 }
