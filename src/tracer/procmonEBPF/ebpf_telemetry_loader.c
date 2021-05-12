@@ -281,7 +281,7 @@ int ebpf_telemetry_start(
     }
 
     if (sscanf(uname_s.release, "%u.%u", &major, &minor) == 2){
-        //fprintf(stderr, "Found Kernel version: %u.%u\n", major, minor);
+        fprintf(stderr, "Found Kernel version: %u.%u\n", major, minor);
     }
     else{
         fprintf(stderr, "Couldn't find version\n");
@@ -300,25 +300,25 @@ int ebpf_telemetry_start(
     } else if (major == 4 && minor <= 16) {
         snprintf(filename, sizeof(filename), "%s", KERN_4_15_4_16_OBJ);
         raw_tracepoints = false;
-        //fprintf(stderr, "Using Tracepoints, sub 4096 instructions, no loops\n");
+        fprintf(stderr, "Using Tracepoints, sub 4096 instructions, no loops\n");
     } else if ((major == 4) || (major == 5 && minor <= 1)) {
         snprintf(filename, sizeof(filename), "%s", KERN_4_17_5_1_OBJ);
         raw_tracepoints = true;
-        //fprintf(stderr, "Using Raw Tracepoints, sub 4096 instructions, no loops\n");
+        fprintf(stderr, "Using Raw Tracepoints, sub 4096 instructions, no loops\n");
     } else if (major == 5 && minor == 2) {
         snprintf(filename, sizeof(filename), "%s", KERN_5_2_OBJ);
         raw_tracepoints = true;
-        //fprintf(stderr, "Using Raw Tracepoints, sub 1M instructions, no loops\n");
+        fprintf(stderr, "Using Raw Tracepoints, sub 1M instructions, no loops\n");
     } else {
         snprintf(filename, sizeof(filename), "%s", KERN_5_3__OBJ);
         raw_tracepoints = true;
-        //fprintf(stderr, "Using Raw Tracepoints, sub 1M instructions, with loops\n");
+        fprintf(stderr, "Using Raw Tracepoints, sub 1M instructions, with loops\n");
     }
 
     // discover path
     snprintf(filepath, PATH_MAX, "%s", filename);
 
-    //fprintf(stderr, "Using filepath %s\n", filepath);
+    fprintf(stderr, "Using filepath %s\n", filepath);
 
     if (stat(filepath, &filepath_stat) != 0 || !S_ISREG(filepath_stat.st_mode)) {
         snprintf(filepath, PATH_MAX, "%s/%s", SYSMON_EBPF_DIR, filename);
@@ -334,7 +334,7 @@ int ebpf_telemetry_start(
         }
     }
 
-    //fprintf(stderr, "Using EBPF object: %s\n", filepath);
+    fprintf(stderr, "Using EBPF object: %s\n", filepath);
 
     setrlimit(RLIMIT_MEMLOCK, &lim);
 
