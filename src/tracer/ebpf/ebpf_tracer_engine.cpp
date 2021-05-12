@@ -14,34 +14,6 @@
 
 int i=0;
 
-static void handle_event(void *ctx, int cpu, void *data, __u32 size)
-{
-    /*if (size < 16) {
-        printf("BAD EVENT: size=%d\n", size);
-        bad_events++;
-        return;
-    }*/
-
-    //FILE *f = fopen("hits.txt", "w");
-    //fprintf(f, "Got a hit\n");
-    //fclose(f);
-
-    //PSYSMON_EVENT_HEADER eventHdr = (PSYSMON_EVENT_HEADER)data;
-    //total_events++;
-    //printf("Got an event: %d\n", i);
-    i++;
-
-    //DispatchEvent(eventHdr);
-}
-
-void handle_lost_events(void *ctx, int cpu, __u64 lost_cnt)
-{
-    fprintf(stdout, "Lost %llu events on CPU #%d!\n", lost_cnt, cpu);
-    //num_lost_notifications++;
-    //num_lost_events += lost_cnt;
-}
-
-
 /*bcc_symbol_option EbpfTracerEngine::SymbolOption = {.use_debug_file = 1,
                                                     .check_debug_file_crc = 1,
 						    .lazy_symbolize = 1,
@@ -139,7 +111,7 @@ void EbpfTracerEngine::PerfCallbackWrapper(/* EbpfTracerEngine* */void *cbCookie
 
 void EbpfTracerEngine::PerfCallback(void *rawMessage, int rawMessageSize)
 {
-    //fprintf(stderr, "Callback");
+    fprintf(stderr, "Callback");
     EventQueue.push(*static_cast<SyscallEvent*>(rawMessage));
 }
 
